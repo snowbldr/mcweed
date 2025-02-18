@@ -25,10 +25,10 @@ class McWeedCoreAirway:
     def angle(self):
         return 360 / self.count
 
-    def airway_helix(self, bowl_inner_diameter: float):
+    def airway_helix(self, bowl: McWeedBowl):
         height = self.height + self.inner_diameter
         pitch = height / self.turns
-        offset = self.offset(bowl_inner_diameter)
+        offset = self.offset(bowl.inner_diameter/2 - (bowl.outer_diameter-bowl.inner_diameter) - .5)
         return (
             Workplane()
             .center(offset + 0.6, 0)
@@ -47,7 +47,7 @@ class McWeedCore:
     wire_ring_depth: float
 
     def height(self):
-        return self.airway.height + self.airway.height
+        return self.bowl.height + self.airway.height
 
     def build(self):
         # Make the main body and cut the bowl hole
@@ -61,7 +61,7 @@ class McWeedCore:
         # Cut the airways
         for i in range(self.airway.count):
             core = core.cut(
-                self.airway.airway_helix(self.bowl.inner_diameter)
+                self.airway.airway_helix(self.bowl)
                 .rotate((0, 0, 0), (0, 0, 1), i * self.airway.angle())
             )
 
