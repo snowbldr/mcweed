@@ -2,18 +2,11 @@ from dataclasses import dataclass
 
 from cadquery import Workplane, Wire
 
+from parts.shared.mcweed_ceramic_filament_printable_core import McWeedBowl
 from parts.shared.thermal_cutoff import ThermalCutoffSocket
 
-
 @dataclass
-class McWeedBowl:
-    height: float
-    inner_diameter: float
-    outer_diameter: float
-
-
-@dataclass
-class McWeedCoreAirway:
+class McWeedPressableCoreAirway:
     inner_diameter: float
     turns: float
     height: float
@@ -25,25 +18,22 @@ class McWeedCoreAirway:
     def angle(self):
         return 360 / self.count
 
-    def airway_helix(self, bowl: McWeedBowl):
-        height = self.height + self.inner_diameter
-        pitch = height / self.turns
+    def airway_hole(self, bowl: McWeedBowl):
         offset = self.offset(bowl.inner_diameter/2 - (bowl.outer_diameter-bowl.inner_diameter) - .35)
         return (
             Workplane()
             .center(offset + 0.6, 0)
             .ellipseArc(x_radius=self.inner_diameter * 1.1, y_radius=self.inner_diameter / 2, makeWire=True)
-            .sweep(Workplane(
-                Wire.makeHelix(pitch=pitch, height=height, radius=offset * 2)
-            ), isFrenet=True)
+            .extrude(self.height)
             .translate((0, 0, -self.inner_diameter * 3))
         )
 
 
+# noinspection DuplicatedCode
 @dataclass
-class McWeedCore:
+class McWeedPressableCore:
     bowl: McWeedBowl
-    airway: McWeedCoreAirway
+    airway: McWeedPressableCoreAirway
     wire_ring_depth: float
 
     def height(self):
@@ -61,7 +51,7 @@ class McWeedCore:
         # Cut the airways
         for i in range(self.airway.count):
             core = core.cut(
-                self.airway.airway_helix(self.bowl)
+                self.airway.airway_hole(self.bowl)
                 .rotate((0, 0, 0), (0, 0, 1), i * self.airway.angle())
             )
 
@@ -82,7 +72,8 @@ class McWeedCore:
         )
 
 
-def wire_ring(core: McWeedCore):
+# noinspection DuplicatedCode
+def wire_ring(core: McWeedPressableCore):
     radius = core.airway.offset(core.bowl.inner_diameter) - (core.airway.inner_diameter * 1.15) / 2 + 0.6
     return (
         Workplane()

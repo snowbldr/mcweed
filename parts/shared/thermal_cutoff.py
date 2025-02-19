@@ -49,4 +49,10 @@ class ThermalCutoffHolder:
                 self.socket.build()
                 .translate((0, 0, -wall_thickness/2))
             )
+            # cut a channel to tuck the lower wire into and avoid contact
+            .cut(
+                Workplane()
+                .box(length=self.socket.wire_radius*2, width=self.socket.fuse_radius*2, height=9)
+                .translate((self.socket.fuse_radius+self.socket.wire_radius-0.3, 2.25, -(self.height/2 - 8)))
+            )
         )

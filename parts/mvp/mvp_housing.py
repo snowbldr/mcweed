@@ -16,6 +16,6 @@ class MVPHousing:
         housing.add(self.core_socket.build(wall_thickness))
         housing.add(
             self.battery_holder.build(wall_thickness)
-            .translate((-self.core_socket.outer_diameter(wall_thickness), 0, 0))
+            .translate((-self.core_socket.outer_diameter(wall_thickness) - wall_thickness*2 - 0.5, 0, -5))
         )
         return housing

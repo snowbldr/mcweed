@@ -36,25 +36,25 @@ class BatteryTab:
             )
             .cut(
                 Workplane()
-                .box(self.width * 2, self.width, tab_wall_thickness)
+                .box(self.width * 2, self.width * 2, tab_wall_thickness)
                 .rotate((0, 0, 0), (1, 0, 0), 30)
                 .translate((0, -self.height / 2 + self.width / 2, 0))
             )
             .cut(
                 Workplane()
-                .box(self.width * 2, self.width, tab_wall_thickness)
+                .box(self.width * 2, self.width * 2, tab_wall_thickness)
                 .rotate((0, 0, 0), (1, 0, 0), -30)
                 .translate((0, self.height / 2 - self.width / 2, 0))
             )
             .cut(
                 Workplane()
-                .box(self.width * 2, self.height, tab_wall_thickness)
+                .box(self.width * 2, self.height * 2, tab_wall_thickness)
                 .rotate((0, 0, 0), (0, 1, 0), -30)
                 .translate((-self.width, 0, 0))
             )
             .cut(
                 Workplane()
-                .box(self.width * 2, self.height, tab_wall_thickness)
+                .box(self.width * 2, self.height * 2, tab_wall_thickness)
                 .rotate((0, 0, 0), (0, 1, 0), 30)
                 .translate((self.width, 0, 0))
             )
@@ -64,49 +64,53 @@ class BatteryTab:
 # 10A BMS https://www.amazon.com/dp/B08MPXHFJB?ref_=ppx_hzsearch_conn_dt_b_fed_asin_title_1
 @dataclass
 class BMSHolder:
-    width: float = 7.6
+    width: float = 6.5
     length: float = 35.15
     thickness: float = 3
+    window_height: float = 3.5
 
-    def build(self, wall_thickness):
-        center_translate = self.length / 2 - 3.5 / 2
+    def solder_window(self, wall_thickness):
         return (
             Workplane()
-            .box(self.width + wall_thickness, self.length + wall_thickness, self.thickness + wall_thickness)
-            .cut(
-                Workplane()
-                .box(self.width + wall_thickness, self.length, self.thickness)
-                .translate((-wall_thickness / 2, 0, 0))
+            .box(self.thickness * 2, self.width + wall_thickness * 2, self.window_height)
+            .translate((self.thickness/2 + wall_thickness/2, -wall_thickness))
+        )
+
+    def solder_windows(self, wall_thickness):
+        return (
+            Workplane()
+            .add(self.solder_window(wall_thickness).translate((0, 0, self.length / 2 - self.window_height / 2)))
+            .add(self.solder_window(wall_thickness).translate((0, 0, -self.length / 2 + self.window_height / 2)))
+            .add(self.solder_window(wall_thickness).translate((0, 0, -(self.length / 2 - 10.5))))
+        )
+
+    def bms_hole(self, wall_thickness):
+        return (
+            Workplane()
+            .box(
+                self.thickness,
+                self.width + wall_thickness * 2,
+                self.length
             )
-            .cut(
-                # cut for battery solder pad
-                Workplane()
-                .box(self.width, 3.5, self.thickness)
-                .translate((0, center_translate, wall_thickness))
-            )
-            .cut(
-                # cut for other battery solder pad
-                Workplane()
-                .box(self.width, 3.5, self.thickness)
-                .translate((0, -center_translate, wall_thickness))
-            )
-            .cut(
-                # cut for power solder pads
-                Workplane()
-                .box(self.width, 3.5, self.thickness)
-                .translate((0, center_translate - 9.75, wall_thickness))
-            )
+            .translate((0, -wall_thickness/2 - wall_thickness, 0))
+        )
+
+    def build(self, wall_thickness):
+        return (
+            Workplane()
+            .box(self.thickness + wall_thickness, self.width + wall_thickness, self.length + wall_thickness)
+            .translate((0,-wall_thickness))
         )
 
 
 # Single strip spring contacts https://www.amazon.com/dp/B07N2F5W2D?ref_=ppx_hzsearch_conn_dt_b_fed_asin_title_2
 single_strip_spring_contact = BatteryTab(
-    thickness=0.3,
-    width=5.08,
+    thickness=0.6,
+    width=5.3,
     height=24.25,
     spring_height=9.25,
     spring_center=6,
-    spring_compressed_depth=6,
+    spring_compressed_depth=4.5,
     post_length=5
 )
 
@@ -127,10 +131,11 @@ class BatteryHolder:
 
         def place_bms(piece):
             return (
-                piece.rotateAboutCenter((1, 0, 0), 90)
-                .rotateAboutCenter((0, 1, 0), 180)
-                .translate((0, -holder_od / 2 - wall_thickness / 2))
-                .rotate((0, 0, 0), (0, 0, 1), 63)
+                piece
+                .translate((holder_od / 2 - 0.125, - bms_holder.width / 2 - wall_thickness / 2,
+                            -wall_thickness / 2))
+                .rotateAboutCenter((0, 0, 1), -27)
+                # .translate((-wall_thickness * .66, -wall_thickness * .66))
             )
 
         def place_thermal_cutoff(piece):
@@ -151,33 +156,37 @@ class BatteryHolder:
             Workplane()
             # main battery cylinder
             .cylinder(height=outer_height, radius=holder_od / 2)
-            # square bottom
+            # square bottom bit to help with stability and hold stuff
             .add(
                 Workplane()
-                .box(length=holder_od, width=holder_od / 2, height=outer_height)
-                .translate((0, -holder_od / 4, 0))
+                .box(length=holder_od / 2, width=holder_od / 2,
+                     height=bms_holder.length + cutoff_holder.socket.fuse_radius * 4)
+                .translate((holder_od / 4, -holder_od / 4, wall_thickness * 3))
             )
             # battery cavity
             .cut(
                 Workplane()
                 .cylinder(height=inner_height, radius=holder_id / 2)
             )
-            # cut off top of battery cylinder
-            .cut(
-                Workplane()
-                .cylinder(height=inner_height, radius=holder_od / 2)
-                .translate((0, holder_od / 4, 0))
-            )
             # battery tabs
             .add(self.tab.build()
-                 .translate((0, 0, (outer_height + wall_thickness + self.tab.thickness * 2) / 2))
-                 .rotateAboutCenter((0, 0, 1), 63)
+                 .translate(
+                (0, 0, (outer_height + wall_thickness + self.tab.thickness * 2) / 2 - self.tab.thickness / 2))
+                 .rotateAboutCenter((0, 0, 1), 45)
                  )
             .add(
                 self.tab.build()
                 .rotateAboutCenter((0, 1, 0), 180)
                 .translate((0, 0, -(outer_height + wall_thickness + self.tab.thickness) / 2))
-                .rotateAboutCenter((0, 0, 1), 63)
+                .rotateAboutCenter((0, 0, 1), 45)
+            )
+            # Cut into the sides to let the tabs get far enough in and hit the center
+            .cut(
+                Workplane()
+                .box(length=holder_od, width=holder_od / 4 + 1.75, height=outer_height + wall_thickness * 2)
+                # inset 2.25mm as that's where it fits nice
+                .translate((0, (holder_od / 2 + self.tab.width / 2) - 2.5, 0))
+                .rotate((0, 0, 0), (0, 0, 1), 45)
             )
             # Add the Thermal cutoff holder
             .add(
@@ -203,16 +212,23 @@ class BatteryHolder:
             # Add the bms holder
             .add(place_bms(bms_holder.build(wall_thickness)))
             # Cut bms hole through main body
-            .cut(place_bms(
+            .cut(place_bms(bms_holder.bms_hole(wall_thickness)))
+            # Cut solder windows through main body
+            .cut(place_bms(bms_holder.solder_windows(wall_thickness)))
+            # Cut some of the main body off to allow a finger to get in and pop the battery out
+            .cut(
                 Workplane()
-                .box(bms_holder.width, bms_holder.length, bms_holder.thickness)
-                .translate((wall_thickness - 0.05, -1.69 / 4, -1.69 / 4))
-            ))
-            # Place the holder on it's flat back, ready to print
-            .rotateAboutCenter((0,1,0), 90)
-            .rotateAboutCenter((1,0,0), 90)
+                .box(length=holder_od, width=holder_od, height=outer_height + wall_thickness * 2)
+                .rotateAboutCenter((0, 0, 1), 45)
+                .translate((holder_od * .3, holder_od * .71))
+            )
+            .cut(
+                Workplane()
+                .box(length=holder_od, width=holder_od, height=outer_height + wall_thickness * 2)
+                .translate((holder_od * .8, holder_od * .5))
+            )
         )
 
 
 def battery_holder_21700():
-    return BatteryHolder(22, 71)
+    return BatteryHolder(21, 70)
