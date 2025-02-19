@@ -80,7 +80,8 @@ class BMSHolder:
         return (
             Workplane()
             .add(self.solder_window(wall_thickness).translate((0, 0, self.length / 2 - self.window_height / 2)))
-            .add(self.solder_window(wall_thickness).translate((0, 0, -self.length / 2 + self.window_height / 2)))
+            .add(self.solder_window(wall_thickness).translate((0, 0, self.length / 2 - wall_thickness + 0.2)))
+            .add(self.solder_window(wall_thickness).translate((0, 0, -self.length / 2 + self.window_height / 2 + 0.5)))
             .add(self.solder_window(wall_thickness).translate((0, 0, -(self.length / 2 - 10.5))))
         )
 
@@ -92,7 +93,7 @@ class BMSHolder:
                 self.width + wall_thickness * 2,
                 self.length
             )
-            .translate((0, -wall_thickness/2 - wall_thickness, 0))
+            .translate((-wall_thickness/3, -wall_thickness/2 - wall_thickness/2, wall_thickness/3+0.1))
         )
 
     def build(self, wall_thickness):
