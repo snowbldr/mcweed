@@ -93,7 +93,7 @@ class BMSHolder:
                 self.width + wall_thickness * 2,
                 self.length
             )
-            .translate((-wall_thickness/3, -wall_thickness/2 - wall_thickness/2, wall_thickness/3+0.1))
+            .translate((-0.1, -wall_thickness/2 - wall_thickness/2, wall_thickness/3+0.1))
         )
 
     def build(self, wall_thickness):
@@ -106,7 +106,7 @@ class BMSHolder:
 
 # Single strip spring contacts https://www.amazon.com/dp/B07N2F5W2D?ref_=ppx_hzsearch_conn_dt_b_fed_asin_title_2
 single_strip_spring_contact = BatteryTab(
-    thickness=0.6,
+    thickness=0.65,
     width=5.3,
     height=24.25,
     spring_height=9.25,
