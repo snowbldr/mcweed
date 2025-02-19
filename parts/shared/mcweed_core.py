@@ -28,7 +28,7 @@ class McWeedCoreAirway:
     def airway_helix(self, bowl: McWeedBowl):
         height = self.height + self.inner_diameter
         pitch = height / self.turns
-        offset = self.offset(bowl.inner_diameter/2 - (bowl.outer_diameter-bowl.inner_diameter) - .5)
+        offset = self.offset(bowl.inner_diameter/2 - (bowl.outer_diameter-bowl.inner_diameter) - .35)
         return (
             Workplane()
             .center(offset + 0.6, 0)

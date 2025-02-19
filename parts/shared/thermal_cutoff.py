@@ -12,24 +12,26 @@ class ThermalCutoffSocket:
     wire_radius: float = 0.6
 
     def build(self):
-        # TODO I forgot what this number does and it's all fucked up when I change it hahaha
-        height_shift = 1.25
         return (
             Workplane()
+            # cutoff body
             .cylinder(radius=self.fuse_radius, height=self.height)
+            # dome top
             .cut(
-                dome(self.fuse_radius * 2, 8)
+                dome(self.fuse_radius * 2, self.fuse_radius * 4)
                 .translate((0, 0, (self.height - self.fuse_radius * 2) / 2))
             )
+            # wire cut
             .add(
                 Workplane()
-                .cylinder(radius=self.wire_radius, height=self.height - height_shift)
-                .translate((2.25 + self.wire_radius, 0, -height_shift))
+                .cylinder(radius=self.wire_radius, height=self.height )
+                .translate((self.fuse_radius+self.wire_radius/2, -self.wire_radius/2, -self.wire_radius/2))
             )
+            # connect wire cut to fuse body
             .add(
                 Workplane()
-                .box(length=self.fuse_radius, width=1.2, height=self.height - height_shift)
-                .translate((2.25 - self.wire_radius, 0, -height_shift))
+                .box(length=self.fuse_radius, width=self.wire_radius*2, height=self.height, centered=(False, True, True))
+                .translate((self.wire_radius/2, -self.wire_radius/2, -self.wire_radius/2))
             )
         )
 
@@ -42,8 +44,9 @@ class ThermalCutoffHolder:
     def build(self, wall_thickness):
         return (
             Workplane()
-            .cylinder(radius=self.socket.fuse_radius + wall_thickness, height=self.height)
+            .cylinder(radius=self.socket.fuse_radius + wall_thickness + self.socket.wire_radius, height=self.height)
             .cut(
                 self.socket.build()
+                .translate((0, 0, -wall_thickness/2))
             )
         )

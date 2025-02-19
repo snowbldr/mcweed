@@ -44,5 +44,4 @@ mvp = MVP(
 )
 
 
-# show_object(core.build().wires())
 show_object(mvp.build())
