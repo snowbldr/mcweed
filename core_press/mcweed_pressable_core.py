@@ -24,8 +24,8 @@ class McWeedPressableCoreAirway:
             Workplane()
             .center(offset + 0.6, 0)
             .ellipseArc(x_radius=self.inner_diameter * 1.1, y_radius=self.inner_diameter / 2, makeWire=True)
-            .extrude(self.height)
-            .translate((0, 0, -self.inner_diameter * 3))
+            .extrude(self.height + self.inner_diameter)
+            .translate((0, 0, -self.height/4))
         )
 
 
@@ -44,8 +44,10 @@ class McWeedPressableCore:
         core = (
             Workplane()
             .cylinder(radius=self.bowl.outer_diameter / 2, height=self.height())
-            .cut(Workplane().cylinder(height=self.bowl.height, radius=self.bowl.inner_diameter / 2).translate(
-                (0, 0, -(self.height() - self.bowl.height) / 2)))
+            .cut(
+                Workplane()
+                .cylinder(height=self.bowl.height, radius=self.bowl.inner_diameter / 2)
+                .translate((0, 0, -(self.height() - self.bowl.height) / 2)))
         )
 
         # Cut the airways
@@ -74,7 +76,7 @@ class McWeedPressableCore:
 
 # noinspection DuplicatedCode
 def wire_ring(core: McWeedPressableCore):
-    radius = core.airway.offset(core.bowl.inner_diameter) - (core.airway.inner_diameter * 1.15) / 2 + 0.6
+    radius = (core.airway.offset(core.bowl.inner_diameter) - (core.airway.inner_diameter * 2.75)) / 2
     return (
         Workplane()
         .cylinder(height=core.wire_ring_depth, radius=radius)
