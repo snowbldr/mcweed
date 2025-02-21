@@ -12,14 +12,16 @@ class CoreSocket:
     vent_count: int = 8
 
     def stop_ring(self, wall_thickness: float):
+        # we don't want any melty boys
+        ring_thickness=wall_thickness*2
         return (
             Workplane()
-            .cylinder(height=wall_thickness/2, radius=self.outer_diameter / 2)
+            .cylinder(height=ring_thickness, radius=self.outer_diameter / 2)
             .cut(
                 Workplane()
                 .cylinder(height=wall_thickness*2, radius=self.inner_diameter/2 - wall_thickness)
             )
-            .translate((0, 0, -((self.height - wall_thickness/2)/2)))
+            .translate((0, 0, -((self.height - ring_thickness)/2)))
         )
 
     def build(self, wall_thickness):

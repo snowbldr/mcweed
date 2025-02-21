@@ -24,39 +24,48 @@ class BatteryTab:
     spring_compressed_depth: float
     post_length: float
 
+    def holder_thickness(self):
+        return 1.25 + self.thickness
+
     def build(self):
-        tab_wall_thickness = 1.25 + self.thickness
+        holder_thickness = self.holder_thickness()
         return (
             Workplane()
-            .box(self.width * 2, self.height - self.post_length, tab_wall_thickness)
+            .box(self.width * 2, self.height - self.post_length, holder_thickness)
             .cut(
                 Workplane()
                 .box(self.width, self.height, self.thickness)
-                .translate((0, 0, - tab_wall_thickness / 2 + self.thickness / 2))
+                .translate((0, 0, - holder_thickness / 2 + self.thickness / 2))
             )
             .cut(
                 Workplane()
-                .box(self.width * 2, self.width * 2, tab_wall_thickness)
+                .box(self.width * 2, self.width * 2, holder_thickness)
                 .rotate((0, 0, 0), (1, 0, 0), 30)
                 .translate((0, -self.height / 2 + self.width / 2, 0))
             )
             .cut(
                 Workplane()
-                .box(self.width * 2, self.width * 2, tab_wall_thickness)
+                .box(self.width * 2, self.width * 2, holder_thickness)
                 .rotate((0, 0, 0), (1, 0, 0), -30)
                 .translate((0, self.height / 2 - self.width / 2, 0))
             )
             .cut(
                 Workplane()
-                .box(self.width * 2, self.height * 2, tab_wall_thickness)
+                .box(self.width * 2, self.height * 2, holder_thickness)
                 .rotate((0, 0, 0), (0, 1, 0), -30)
                 .translate((-self.width, 0, 0))
             )
             .cut(
                 Workplane()
-                .box(self.width * 2, self.height * 2, tab_wall_thickness)
+                .box(self.width * 2, self.height * 2, holder_thickness)
                 .rotate((0, 0, 0), (0, 1, 0), 30)
                 .translate((self.width, 0, 0))
+            )
+            # cut the top off, reshaping everything is too annoying
+            .cut(
+                Workplane()
+                .box(self.width * 2, self.height * 2, holder_thickness)
+                .translate((0, 0, holder_thickness - 0.5))
             )
         )
 
@@ -73,7 +82,7 @@ class BMSHolder:
         return (
             Workplane()
             .box(self.thickness * 2, self.width + wall_thickness * 2, self.window_height)
-            .translate((self.thickness/2 + wall_thickness/2, -wall_thickness))
+            .translate((self.thickness / 2 + wall_thickness / 2, -wall_thickness))
         )
 
     def solder_windows(self, wall_thickness):
@@ -93,25 +102,25 @@ class BMSHolder:
                 self.width + wall_thickness * 2,
                 self.length
             )
-            .translate((-0.1, -wall_thickness/2 - wall_thickness/2, wall_thickness/3+0.1))
+            .translate((-0.1 - wall_thickness/4, -wall_thickness / 2 - wall_thickness / 2, wall_thickness / 3 + 0.1))
         )
 
     def build(self, wall_thickness):
         return (
             Workplane()
             .box(self.thickness + wall_thickness, self.width + wall_thickness, self.length + wall_thickness)
-            .translate((0,-wall_thickness))
+            .translate((0, -wall_thickness))
         )
 
 
 # Single strip spring contacts https://www.amazon.com/dp/B07N2F5W2D?ref_=ppx_hzsearch_conn_dt_b_fed_asin_title_2
 single_strip_spring_contact = BatteryTab(
-    thickness=0.65,
-    width=5.3,
+    thickness=0.55,
+    width=5.45,
     height=24.25,
     spring_height=9.25,
     spring_center=6,
-    spring_compressed_depth=4.5,
+    spring_compressed_depth=4.75,
     post_length=5
 )
 
@@ -164,22 +173,44 @@ class BatteryHolder:
                      height=bms_holder.length + cutoff_holder.socket.fuse_radius * 4)
                 .translate((holder_od / 4, -holder_od / 4, wall_thickness * 3))
             )
+            # squared bottom to help with bed adhesion and print stability
+            .add(
+                Workplane()
+                .box(length=wall_thickness*2, width=wall_thickness, height=outer_height)
+                .translate((0,-holder_od/2 + wall_thickness/2))
+            )
             # battery cavity
             .cut(
                 Workplane()
                 .cylinder(height=inner_height, radius=holder_id / 2)
             )
-            # battery tabs
-            .add(self.tab.build()
-                 .translate(
-                (0, 0, (outer_height + wall_thickness + self.tab.thickness * 2) / 2 - self.tab.thickness / 2))
-                 .rotateAboutCenter((0, 0, 1), 45)
-                 )
+            # battery tab holders
+            .add(
+                self.tab.build()
+                .translate((0, 0, -(inner_height - self.tab.holder_thickness()) / 2))
+                .rotateAboutCenter((0, 0, 1), 45)
+            )
             .add(
                 self.tab.build()
                 .rotateAboutCenter((0, 1, 0), 180)
-                .translate((0, 0, -(outer_height + wall_thickness + self.tab.thickness) / 2))
+                .translate((0, 0, (inner_height + self.tab.holder_thickness())/2 - self.tab.holder_thickness()*.75 - 0.05))
                 .rotateAboutCenter((0, 0, 1), 45)
+            )
+            # Cut tab holes through main body
+            .cut(
+                Workplane()
+                .box(length=self.tab.width, width=self.tab.height * 2, height=self.tab.thickness)
+                .translate((0, 0, -(inner_height - self.tab.holder_thickness()) / 2))
+                .rotateAboutCenter((0, 0, 1), 45)
+                .translate((0, 0, -self.tab.thickness))
+            )
+            .cut(
+                Workplane()
+                .box(length=self.tab.width, width=self.tab.height * 2, height=self.tab.thickness)
+                .translate((0, 0, (inner_height + self.tab.holder_thickness())/2 - self.tab.holder_thickness()*.75 - 0.5))
+                .rotateAboutCenter((0, 0, 1), 45)
+                .translate((0, 0, self.tab.thickness))
+
             )
             # Cut into the sides to let the tabs get far enough in and hit the center
             .cut(

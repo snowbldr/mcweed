@@ -54,8 +54,11 @@ class McWeedCeramicFilamentPrintableCore:
         core = (
             Workplane()
             .cylinder(radius=self.bowl.outer_diameter / 2, height=self.height())
-            .cut(Workplane().cylinder(height=self.bowl.height, radius=self.bowl.inner_diameter / 2).translate(
-                (0, 0, -(self.height() - self.bowl.height) / 2)))
+            .cut(
+                Workplane()
+                .cylinder(height=self.bowl.height, radius=self.bowl.inner_diameter / 2)
+                .translate((0, 0, -(self.height() - self.bowl.height) / 2))
+            )
         )
 
         # Cut the airways
@@ -83,7 +86,7 @@ class McWeedCeramicFilamentPrintableCore:
 
 
 def wire_ring(core: McWeedCeramicFilamentPrintableCore):
-    radius = core.airway.offset(core.bowl.inner_diameter) - (core.airway.inner_diameter * 1.15) / 2 + 0.6
+    radius = (core.bowl.inner_diameter - (core.airway.inner_diameter*2) + 0.5) / 2
     return (
         Workplane()
         .cylinder(height=core.wire_ring_depth, radius=radius)
